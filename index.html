@@ -91,9 +91,20 @@ body {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--mint), var(--blue), var(--purple), transparent);
+  background: rgba(232, 240, 240, 0.08);
   z-index: 5;
-  opacity: 0.7;
+  overflow: hidden;
+}
+.topbar i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--mint), var(--blue), var(--purple));
+  box-shadow: 0 0 10px rgba(46, 229, 157, 0.55);
+}
+@keyframes refreshGrow {
+  from { width: 0%; }
+  to { width: 100%; }
 }
 
 .wrap {
@@ -455,12 +466,127 @@ h1 .desk {
   box-shadow: 0 0 8px var(--mint);
 }
 .foot .live.stale { color: var(--amber); }
-.foot .live.stale i { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.foot .live.stale i { background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: none; }
+.foot .live i { animation: pulse 1.8s ease-in-out infinite; }
+.foot .eta {
+  margin-left: 8px;
+  color: var(--dim);
+  letter-spacing: 0.12em;
+}
+
+.badges, .hero, .section-h, .card, .plan, .term, .foot {
+  animation: enterIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.badges { animation-delay: 0.04s; }
+.hero { animation-delay: 0.08s; }
+.section-h:nth-of-type(1) { animation-delay: 0.12s; }
+.card { animation-delay: 0.16s; }
+.plan { animation-delay: 0.20s; }
+.term { animation-delay: 0.28s; }
+.foot { animation-delay: 0.34s; }
+@keyframes enterIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero, .card, .term, .step {
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .hero:hover, .card:hover, .term:hover {
+    border-color: rgba(46, 229, 157, 0.22);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.32), 0 0 0 1px rgba(46, 229, 157, 0.06);
+    transform: translateY(-1px);
+  }
+  .step:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  }
+}
+
+.feed li.enter {
+  animation: feedIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes feedIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pulse-area {
+  opacity: 0;
+  animation: fadeArea 0.85s ease 0.28s forwards;
+}
+.pulse-eq {
+  opacity: 0;
+  animation: fadeArea 0.7s ease 0.7s forwards;
+}
+@keyframes fadeArea { to { opacity: 1; } }
+
+.scan-halo {
+  fill: rgba(46, 229, 157, 0.22);
+  filter: blur(1.2px);
+}
+.scan-core {
+  fill: #E8FFF5;
+  stroke: #2EE59D;
+  stroke-width: 1.4;
+  filter: drop-shadow(0 0 5px rgba(46, 229, 157, 1));
+}
+.scan-ring {
+  fill: none;
+  stroke: #2EE59D;
+  stroke-width: 1.2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scanRing 1.8s ease-out infinite;
+}
+@keyframes scanRing {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+
+.num-flash { animation: numFlash 0.55s ease; }
+@keyframes numFlash {
+  0% { filter: brightness(1.35); }
+  100% { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badges, .hero, .section-h, .card, .plan, .term, .foot,
+  .feed li.enter,
+  .pulse-line,
+  .pulse-glow,
+  .pulse-area,
+  .pulse-eq,
+  .scan-ring,
+  .pill.live .dot,
+  .foot .live i,
+  .topbar i,
+  .num-flash,
+  .step-in {
+    animation: none !important;
+    transition: none !important;
+  }
+  .badges, .hero, .section-h, .card, .plan, .term, .foot,
+  .feed li.enter,
+  .pulse-area,
+  .pulse-eq,
+  .step-in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .pulse-line, .pulse-glow { stroke-dashoffset: 0 !important; }
+  .hero:hover, .card:hover, .term:hover, .step:hover { transform: none; }
+}
+
+.step-in {
+  animation: enterIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 </style>
 </head>
 <body>
 <div class="bg"></div>
-<div class="topbar"></div>
+<div class="topbar" aria-hidden="true"><i id="refreshBar"></i></div>
 <main class="wrap">
   <div class="eyebrow">
     <div><span class="brand">SPIKECALLS</span><span class="slash">/</span><span class="repo">ai-trading-desk</span></div>
@@ -540,7 +666,7 @@ h1 .desk {
   </div>
 
   <div class="foot">
-    <div class="live" id="footLive"><i></i><span>Live</span></div>
+    <div class="live" id="footLive"><i></i><span>Live</span><span class="eta" id="refreshEta"></span></div>
     <div>Not financial advice · paper first</div>
   </div>
 </main>
@@ -560,7 +686,7 @@ function fmtPct(n) {
   return sign + Math.abs(v).toFixed(2) + "%";
 }
 function fmtInt(n) {
-  return Number(n || 0).toLocaleString("en-US");
+  return Math.round(Number(n || 0)).toLocaleString("en-US");
 }
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -569,39 +695,116 @@ function el(tag, cls, text) {
   return n;
 }
 
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const POLL_MS = 60000;
+let refreshStarted = Date.now();
+let pulseSig = "";
+let feedKeys = null;
+let badgesBuilt = false;
+let planBuilt = false;
+let scanRaf = 0;
+
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+function tween(node, to, fmt, duration) {
+  const next = Number(to);
+  const from = (node._val == null) ? 0 : node._val;
+  const first = node._val == null;
+  node._val = next;
+  if (reduceMotion || !Number.isFinite(next) || from === next) {
+    node.textContent = fmt(Number.isFinite(next) ? next : to);
+    return;
+  }
+  if (node._raf) cancelAnimationFrame(node._raf);
+  const t0 = performance.now();
+  const dur = duration || (Math.abs(next - from) > 800 ? 900 : 650);
+  if (!first) {
+    node.classList.remove("num-flash");
+    void node.offsetWidth;
+    node.classList.add("num-flash");
+  }
+  const frame = (now) => {
+    const p = Math.min(1, (now - t0) / dur);
+    node.textContent = fmt(from + (next - from) * easeOut(p));
+    if (p < 1) node._raf = requestAnimationFrame(frame);
+    else node.textContent = fmt(next);
+  };
+  node._raf = requestAnimationFrame(frame);
+}
+
+function fmtPnL(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "—";
+  const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+  return sign + "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function armRefresh() {
+  refreshStarted = Date.now();
+  const bar = $("refreshBar");
+  if (bar && !reduceMotion) {
+    bar.style.animation = "none";
+    void bar.offsetWidth;
+    bar.style.animation = "refreshGrow " + POLL_MS + "ms linear forwards";
+  }
+  tickEta();
+}
+
+function tickEta() {
+  const n = $("refreshEta");
+  if (!n) return;
+  const left = Math.max(0, Math.ceil((POLL_MS - (Date.now() - refreshStarted)) / 1000));
+  n.textContent = left ? ("next " + left + "s") : "refreshing";
+}
+
+function liveLabel(s) {
+  if (s.live) return "LIVE";
+  const age = s.last_cycle_age_s;
+  return age == null ? "STALE · no cycle yet" : ("STALE · " + Math.round(age / 60) + "m ago");
+}
+
 function renderBadges(s) {
   const box = $("badges");
-  box.replaceChildren();
-  const mode = el("span", "pill blue");
-  mode.append(el("span", "dot"), document.createTextNode(s.badge || "PAPER MODE · no wallet"));
-  mode.querySelector(".dot").style.background = "var(--blue)";
-  const live = el("span", s.live ? "pill mint live" : "pill stale");
-  const dot = el("span", "dot");
-  live.append(dot);
-  if (s.live) {
-    live.append(document.createTextNode("LIVE"));
-  } else {
-    const age = s.last_cycle_age_s;
-    const label = age == null ? "STALE · no cycle yet" : ("STALE · " + Math.round(age / 60) + "m ago");
-    live.append(document.createTextNode(label));
+  if (!badgesBuilt) {
+    box.replaceChildren();
+    const mode = el("span", "pill blue");
+    mode.id = "badgeMode";
+    mode.append(el("span", "dot"), document.createTextNode(s.badge || "PAPER MODE · no wallet"));
+    mode.querySelector(".dot").style.background = "var(--blue)";
+    const live = el("span", s.live ? "pill mint live" : "pill stale");
+    live.id = "badgeLive";
+    const dot = el("span", "dot");
+    const lab = el("span", "badge-lab", liveLabel(s));
+    live.append(dot, lab);
+    const clock = el("span", "pill mint");
+    clock.id = "badgeClock";
+    clock.style.color = "var(--muted)";
+    clock.style.borderColor = "var(--line)";
+    clock.append(document.createTextNode(s.clock || ""));
+    box.append(mode, live, clock);
+    badgesBuilt = true;
+    return;
   }
-  const clock = el("span", "pill mint");
-  clock.style.color = "var(--muted)";
-  clock.style.borderColor = "var(--line)";
-  clock.append(document.createTextNode(s.clock || ""));
-  box.append(mode, live, clock);
+  const mode = $("badgeMode");
+  const text = s.badge || "PAPER MODE · no wallet";
+  if (mode && mode.lastChild && mode.lastChild.nodeType === 3) mode.lastChild.textContent = text;
+  const live = $("badgeLive");
+  if (live) {
+    live.className = s.live ? "pill mint live" : "pill stale";
+    const lab = live.querySelector(".badge-lab");
+    if (lab) lab.textContent = liveLabel(s);
+  }
+  const clock = $("badgeClock");
+  if (clock) clock.textContent = s.clock || "";
 }
 
 function renderHero(s) {
   const eq = $("equity");
-  eq.textContent = fmtUSD(s.equity);
   eq.className = "equity" + (s.day_pnl < 0 ? " down" : "");
+  tween(eq, s.equity, fmtUSD, 900);
   const pnl = $("pnl");
-  const sign = s.day_pnl > 0 ? "+" : s.day_pnl < 0 ? "−" : "";
-  pnl.textContent = sign + fmtUSD(Math.abs(s.day_pnl)).replace("$", "$");
-  // keep the $ after sign: +$0.00
-  pnl.textContent = (s.day_pnl > 0 ? "+" : s.day_pnl < 0 ? "−" : "") + "$" + Math.abs(Number(s.day_pnl)).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
   pnl.className = "pnl" + (s.day_pnl > 0 ? " up" : s.day_pnl < 0 ? " down" : "");
+  tween(pnl, s.day_pnl, fmtPnL, 800);
   const bits = [fmtPct(s.day_pnl_pct)];
   if (s.starting_equity) bits.push("start " + fmtUSD(s.starting_equity));
   $("pnlSub").textContent = bits.filter(Boolean).join("  ·  ");
@@ -615,6 +818,8 @@ function renderPulse(s) {
   const lastSeen = seen.length ? seen[seen.length - 1] : null;
   const maxS0 = seen.length ? Math.max(...seen) : 0;
   $("pulseNow").textContent = seen.length ? (lastSeen + " seen  ·  max " + maxS0) : "";
+  const earlySig = seen.join(",") + "|" + equity.join(",");
+  if (earlySig === pulseSig && svg.childNodes.length) return;
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
   const W = 360, H = 86, padL = 2, padR = 2, padT = 8, padB = 14;
@@ -642,24 +847,61 @@ function renderPulse(s) {
   // baseline
   add("line", { x1: padL, y1: padT + innerH, x2: padL + innerW, y2: padT + innerH, stroke: "rgba(232,240,240,0.08)", "stroke-width": "1" });
 
+  const sig = seen.join(",") + "|" + equity.join(",");
+  const replay = sig !== pulseSig;
+  pulseSig = sig;
+  if (!replay && svg.childNodes.length) return;
+
   const pts = seen.map((v, i) => [xAt(i), yAt(v)]);
   const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
   const area = line + " L " + pts[pts.length-1][0].toFixed(1) + " " + (padT + innerH) + " L " + pts[0][0].toFixed(1) + " " + (padT + innerH) + " Z";
-  add("path", { d: area, fill: "rgba(46,229,157,0.14)" });
-  add("path", { d: line, fill: "none", stroke: "#2EE59D", "stroke-width": "1.8", "stroke-linejoin": "round", "stroke-linecap": "round" });
+  add("path", { class: "pulse-area", d: area, fill: "rgba(46,229,157,0.14)" });
+  const glow = add("path", { class: "pulse-glow", d: line, fill: "none", stroke: "rgba(46,229,157,0.35)", "stroke-width": "5", "stroke-linejoin": "round", "stroke-linecap": "round" });
+  const path = add("path", { class: "pulse-line", d: line, fill: "none", stroke: "#2EE59D", "stroke-width": "1.8", "stroke-linejoin": "round", "stroke-linecap": "round" });
 
-  // last point
   const last = pts[pts.length - 1];
-  add("circle", { cx: last[0].toFixed(1), cy: last[1].toFixed(1), r: "2.6", fill: "#2EE59D" });
+  const halo = add("circle", { class: "scan-halo", cx: last[0].toFixed(1), cy: last[1].toFixed(1), r: "7" });
+  const ring = add("circle", { class: "scan-ring", cx: last[0].toFixed(1), cy: last[1].toFixed(1), r: "3.4" });
+  const dot = add("circle", { class: "scan-core", cx: last[0].toFixed(1), cy: last[1].toFixed(1), r: "3.1" });
 
   if (equity.length === seen.length && equity.length > 1) {
     const emin = Math.min(...equity), emax = Math.max(...equity);
     const ey = (v) => padT + innerH - ((v - emin) / (emax - emin || 1)) * innerH * 0.85;
     const eline = equity.map((v, i) => (i ? "L" : "M") + xAt(i).toFixed(1) + " " + ey(v).toFixed(1)).join(" ");
-    add("path", { d: eline, fill: "none", stroke: "#5AA9FF", "stroke-width": "1.3", "stroke-dasharray": "3 3", "stroke-linejoin": "round" });
+    add("path", { class: "pulse-eq", d: eline, fill: "none", stroke: "#5AA9FF", "stroke-width": "1.3", "stroke-dasharray": "3 3", "stroke-linejoin": "round" });
   }
 
   add("text", { x: padL, y: H - 2, fill: "#5C6573", "font-size": "9", "font-family": "Inter Tight" }, "0");
+
+  if (scanRaf) cancelAnimationFrame(scanRaf);
+  try {
+    const len = path.getTotalLength();
+    const lenS = String(len);
+    for (const n of [path, glow]) {
+      n.style.setProperty("--path-len", lenS);
+      n.style.strokeDasharray = lenS;
+      n.style.strokeDashoffset = lenS;
+    }
+    if (reduceMotion) {
+      path.style.strokeDashoffset = "0";
+      glow.style.strokeDashoffset = "0";
+      return;
+    }
+    const dur = 1150;
+    const t0 = performance.now();
+    const follow = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const e = easeOut(p);
+      const off = String(len * (1 - e));
+      path.style.strokeDashoffset = off;
+      glow.style.strokeDashoffset = off;
+      const pt = path.getPointAtLength(len * e);
+      const cx = pt.x.toFixed(1), cy = pt.y.toFixed(1);
+      for (const n of [halo, ring, dot]) { n.setAttribute("cx", cx); n.setAttribute("cy", cy); }
+      if (p < 1) scanRaf = requestAnimationFrame(follow);
+    };
+    scanRaf = requestAnimationFrame(follow);
+  } catch (e) { /* path length unavailable */ }
 }
 
 function renderPlan(s) {
@@ -691,26 +933,41 @@ function renderPlan(s) {
     },
   ];
   const box = $("plan");
-  box.replaceChildren();
-  for (const it of items) {
-    const row = el("div", "step " + it.cls);
-    row.append(el("div", "idx", it.idx));
-    const mid = el("div");
-    const name = el("div", "name");
-    name.append(document.createTextNode(it.name));
-    if (it.chip) {
-      const c = el("span", "chip " + it.cls, it.chip);
-      name.append(c);
-    }
-    mid.append(name);
-    const job = el("div", "job", it.job + (it.extra ? "  ·  " + it.extra : ""));
-    mid.append(job);
-    const right = el("div");
-    right.append(el("div", "count", fmtInt(it.count)));
-    right.append(el("div", "unit", it.unit));
-    row.append(mid, right);
-    box.append(row);
+  const firstPlan = !planBuilt;
+  if (firstPlan) {
+    box.replaceChildren();
+    items.forEach((it, i) => {
+      const row = el("div", "step " + it.cls + " step-in");
+      row.style.animationDelay = (0.04 * i) + "s";
+      row.dataset.idx = it.idx;
+      row.append(el("div", "idx", it.idx));
+      const mid = el("div");
+      const name = el("div", "name");
+      name.append(document.createTextNode(it.name));
+      if (it.chip) name.append(el("span", "chip " + it.cls, it.chip));
+      mid.append(name);
+      mid.append(el("div", "job", it.job + (it.extra ? "  ·  " + it.extra : "")));
+      const right = el("div");
+      const count = el("div", "count", "0");
+      count.dataset.role = "count";
+      right.append(count, el("div", "unit", it.unit));
+      row.append(mid, right);
+      box.append(row);
+    });
+    planBuilt = true;
   }
+  const rows = box.querySelectorAll(".step");
+  items.forEach((it, i) => {
+    const row = rows[i];
+    if (!row) return;
+    if (!firstPlan) row.className = "step " + it.cls;
+    const job = row.querySelector(".job");
+    if (job) job.textContent = it.job + (it.extra ? "  ·  " + it.extra : "");
+    const count = row.querySelector('[data-role="count"]');
+    if (count) tween(count, it.count || 0, fmtInt, 800);
+    const unit = row.querySelector(".unit");
+    if (unit) unit.textContent = it.unit;
+  });
 }
 
 function verdictExtra(p) {
@@ -722,46 +979,85 @@ function verdictExtra(p) {
   return parts.join(" · ");
 }
 
+function feedKey(it) {
+  return (it.t || "") + "|" + (it.tag || it.kind || "") + "|" + (it.text || "");
+}
+
+function feedItem(it) {
+  const li = el("li");
+  li.dataset.key = feedKey(it);
+  const meta = el("div", "meta");
+  meta.append(el("span", "t", it.t || ""));
+  meta.append(el("span", "tag tone-" + (it.tone || "mint"), "[" + (it.tag || it.kind || "log") + "]"));
+  li.append(meta, el("div", "txt", it.text || ""));
+  return li;
+}
+
 function renderFeed(s) {
   $("termTitle").textContent = "paper · " + (s.open_positions || 0) + " open · 0 keys held";
   const ul = $("feed");
-  ul.replaceChildren();
   const items = s.feed || [];
   if (!items.length) {
-    ul.append(el("div", "feed-empty", "No journal events yet."));
+    if (feedKeys == null || feedKeys.length) {
+      ul.replaceChildren();
+      ul.append(el("div", "feed-empty", "No journal events yet."));
+    }
+    feedKeys = [];
     return;
   }
-  for (const it of items) {
-    const li = el("li");
-    const meta = el("div", "meta");
-    meta.append(el("span", "t", it.t || ""));
-    meta.append(el("span", "tag tone-" + (it.tone || "mint"), "[" + (it.tag || it.kind || "log") + "]"));
-    li.append(meta, el("div", "txt", it.text || ""));
-    ul.append(li);
+  const keys = items.map(feedKey);
+  if (feedKeys == null) {
+    ul.replaceChildren();
+    for (const it of items) ul.append(feedItem(it));
+    feedKeys = keys;
+    return;
   }
+  if (keys.join("\n") === feedKeys.join("\n")) return;
+  const prevSet = new Set(feedKeys);
+  const frag = document.createDocumentFragment();
+  for (const it of items) {
+    const li = feedItem(it);
+    if (!prevSet.has(feedKey(it))) li.classList.add("enter");
+    frag.append(li);
+  }
+  ul.replaceChildren(frag);
+  feedKeys = keys;
 }
+
+const COUNT_ROWS = [
+  ["Cycles", "cycles"],
+  ["Launches seen", "seen"],
+  ["Free kills", "free"],
+  ["Benched", "benched"],
+  ["Chain checks", "chain_checks"],
+  ["Analyst calls", "analyst_calls"],
+  ["Paper entries", "entries"],
+  ["Exits", "exits"],
+  ["Errors", "errors"],
+  ["Open positions", "open_positions"],
+];
 
 function renderCounts(s) {
   const tbody = $("counts").querySelector("tbody");
-  tbody.replaceChildren();
   const today = (s.counters && s.counters.today) || {};
   const all = (s.counters && s.counters.all) || {};
-  const rows = [
-    ["Cycles", "cycles"],
-    ["Launches seen", "seen"],
-    ["Free kills", "free"],
-    ["Benched", "benched"],
-    ["Chain checks", "chain_checks"],
-    ["Analyst calls", "analyst_calls"],
-    ["Paper entries", "entries"],
-    ["Exits", "exits"],
-    ["Errors", "errors"],
-    ["Open positions", "open_positions"],
-  ];
-  for (const [label, key] of rows) {
-    const tr = el("tr");
-    tr.append(el("td", "", label), el("td", "", fmtInt(today[key])), el("td", "", fmtInt(all[key])));
-    tbody.append(tr);
+  if (!tbody.childElementCount) {
+    for (const [label, key] of COUNT_ROWS) {
+      const tr = el("tr");
+      tr.dataset.key = key;
+      const tdT = el("td", "", "0");
+      const tdA = el("td", "", "0");
+      tdT.dataset.role = "today";
+      tdA.dataset.role = "all";
+      tr.append(el("td", "", label), tdT, tdA);
+      tbody.append(tr);
+    }
+  }
+  for (const tr of tbody.children) {
+    const key = tr.dataset.key;
+    const tds = tr.querySelectorAll("td");
+    tween(tds[1], today[key] || 0, fmtInt, 800);
+    tween(tds[2], all[key] || 0, fmtInt, 800);
   }
 }
 
@@ -787,13 +1083,17 @@ async function tick() {
     if (!r.ok) return;
     const s = await r.json();
     render(s);
+    if (window._armedOnce) armRefresh();
+    else window._armedOnce = true;
   } catch (e) {
     /* stay on last snapshot; this is a local preview */
   }
 }
 
+armRefresh();
 tick();
-setInterval(tick, 60000);
+setInterval(tick, POLL_MS);
+setInterval(tickEta, 1000);
 </script>
 </body>
 </html>
