@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>The AI Trading desk</title>
+<style>
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/InterTight.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/InterTight-Italic.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/InstrumentSerif-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #0B0F16;
+  --bg-2: #070A10;
+  --card: #0E141C;
+  --card-2: #111821;
+  --line: rgba(232, 240, 240, 0.08);
+  --mint: #2EE59D;
+  --mint-dim: rgba(46, 229, 157, 0.14);
+  --blue: #5AA9FF;
+  --blue-dim: rgba(90, 169, 255, 0.14);
+  --red: #FF4D6D;
+  --red-dim: rgba(255, 77, 109, 0.14);
+  --amber: #FFB547;
+  --amber-dim: rgba(255, 181, 71, 0.14);
+  --purple: #A78BFA;
+  --purple-dim: rgba(167, 139, 250, 0.14);
+  --text: #F2F5F7;
+  --muted: #8B93A1;
+  --dim: #5C6573;
+  --white: #E8F0F0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); }
+body {
+  font-family: "Inter Tight", Inter, system-ui, sans-serif;
+  font-weight: 450;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(900px 420px at 50% -10%, rgba(46, 229, 157, 0.10), transparent 60%),
+    radial-gradient(700px 380px at 110% 20%, rgba(167, 139, 250, 0.07), transparent 55%),
+    radial-gradient(600px 400px at -10% 80%, rgba(90, 169, 255, 0.05), transparent 55%),
+    var(--bg);
+}
+.bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(232, 240, 240, 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(ellipse at 50% 20%, #000 20%, transparent 75%);
+}
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--mint), var(--blue), var(--purple), transparent);
+  z-index: 5;
+  opacity: 0.7;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  width: min(430px, 100%);
+  margin: 0 auto;
+  padding: 18px 16px 28px;
+}
+
+.eyebrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+.eyebrow .brand { color: #9AA3B0; }
+.eyebrow .slash { color: #4A5360; padding: 0 5px; }
+.eyebrow .repo { color: var(--dim); }
+
+h1 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  color: var(--white);
+}
+h1 .desk {
+  font-family: "Instrument Serif", "Newsreader", serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  padding-left: 4px;
+  background: linear-gradient(90deg, #E8897A 0%, #D080A8 42%, #B888E0 72%, #A78BFA 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.tagline {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: -0.01em;
+}
+.tagline em {
+  font-style: normal;
+  color: var(--mint);
+  font-weight: 600;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 14px 0 18px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 9px 4px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid;
+  background: rgba(11, 15, 22, 0.6);
+  line-height: 1.2;
+}
+.pill .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+.pill.mint { color: var(--mint); border-color: rgba(46, 229, 157, 0.35); }
+.pill.blue { color: var(--blue); border-color: rgba(90, 169, 255, 0.4); }
+.pill.red  { color: var(--red);  border-color: rgba(255, 77, 109, 0.4); }
+.pill.amber{ color: var(--amber);border-color: rgba(255, 181, 71, 0.4); }
+.pill.stale { color: var(--amber); border-color: rgba(255, 181, 71, 0.4); }
+.pill.live .dot { background: var(--mint); animation: pulse 1.8s ease-in-out infinite; }
+.pill.stale .dot { background: var(--amber); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+
+.hero {
+  background: linear-gradient(180deg, rgba(14, 20, 28, 0.92), rgba(11, 15, 22, 0.8));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 0 0 1px rgba(46, 229, 157, 0.04), 0 20px 50px rgba(0,0,0,0.35);
+}
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+.label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.equity {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--mint);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 28px rgba(46, 229, 157, 0.18);
+}
+.equity.down { color: var(--red); text-shadow: 0 0 28px rgba(255, 77, 109, 0.2); }
+.pnl-box { text-align: right; }
+.pnl {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.pnl.up { color: var(--mint); }
+.pnl.down { color: var(--red); }
+.pnl-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.section-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 22px 0 8px;
+}
+.section-h .num {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mint);
+}
+.section-h h2 {
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+.section-h .right {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.card {
+  background: rgba(14, 20, 28, 0.86);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 12px 10px;
+}
+
+.pulse-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.pulse-meta .now {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--mint);
+  font-variant-numeric: tabular-nums;
+}
+#pulse { width: 100%; height: 86px; display: block; }
+
+.plan { display: flex; flex-direction: column; gap: 7px; }
+.step {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(8, 12, 18, 0.55);
+  position: relative;
+}
+.step .idx {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  text-align: center;
+}
+.step .name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+.step .job {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.step .count {
+  text-align: right;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.step .unit {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-top: 2px;
+  text-align: right;
+}
+.step.mint   { border-color: rgba(46, 229, 157, 0.28); }
+.step.purple { border-color: rgba(167, 139, 250, 0.32); }
+.step.amber  { border-color: rgba(255, 181, 71, 0.32); }
+.step.blue   { border-color: rgba(90, 169, 255, 0.32); }
+.step.red    { border-color: rgba(255, 77, 109, 0.32); }
+.step.mint .count, .step.mint .name { color: var(--mint); }
+.step.purple .count, .step.purple .name { color: var(--purple); }
+.step.amber .count, .step.amber .name { color: var(--amber); }
+.step.blue .count, .step.blue .name { color: var(--blue); }
+.step.red .count, .step.red .name { color: var(--red); }
+.chip {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  vertical-align: 1px;
+}
+.chip.mint { background: var(--mint-dim); color: var(--mint); }
+.chip.purple { background: var(--purple-dim); color: var(--purple); }
+.chip.amber { background: var(--amber-dim); color: var(--amber); }
+.chip.blue { background: var(--blue-dim); color: var(--blue); }
+.chip.red { background: var(--red-dim); color: var(--red); }
+
+.term {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #0A1017;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+}
+.term-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: #0C131B;
+}
+.traffic { display: flex; gap: 5px; }
+.traffic i {
+  width: 8px; height: 8px; border-radius: 50%; display: block;
+}
+.traffic i:nth-child(1) { background: #FF5F57; }
+.traffic i:nth-child(2) { background: #FEBC2E; }
+.traffic i:nth-child(3) { background: #28C840; }
+.term-title {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--dim);
+  letter-spacing: 0.02em;
+}
+.feed { list-style: none; padding: 4px 0 8px; }
+.feed li {
+  padding: 6px 12px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  border-bottom: 1px solid rgba(232, 240, 240, 0.04);
+}
+.feed li:last-child { border-bottom: 0; }
+.feed .meta { display: flex; align-items: baseline; gap: 8px; }
+.feed .t { color: var(--dim); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.feed .tag { font-weight: 600; }
+.feed .txt { color: var(--white); overflow-wrap: anywhere; margin-top: 1px; }
+.tone-mint { color: var(--mint); }
+.tone-blue { color: var(--blue); }
+.tone-red { color: var(--red); }
+.tone-amber { color: var(--amber); }
+.tone-purple { color: var(--purple); }
+.feed-empty {
+  padding: 16px 12px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.table th, .table td {
+  padding: 7px 4px;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.table th {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+}
+.table td:first-child, .table th:first-child {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 550;
+}
+.table td:nth-child(2), .table td:nth-child(3) {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.table tr:last-child td { border-bottom: 0; }
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.foot .live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mint);
+}
+.foot .live i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 8px var(--mint);
+}
+.foot .live.stale { color: var(--amber); }
+.foot .live.stale i { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="topbar"></div>
+<main class="wrap">
+  <div class="eyebrow">
+    <div><span class="brand">SPIKECALLS</span><span class="slash">/</span><span class="repo">ai-trading-desk</span></div>
+    <div>v. 2026</div>
+  </div>
+  <h1>The AI Trading<span class="desk">desk</span></h1>
+  <p class="tagline">The AI reads. The code decides. <em>You sign.</em></p>
+
+  <div class="badges" id="badges"></div>
+
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="label">Paper equity</div>
+        <div class="equity" id="equity">—</div>
+      </div>
+      <div class="pnl-box">
+        <div class="label">Today’s P&amp;L</div>
+        <div class="pnl" id="pnl">—</div>
+        <div class="pnl-sub" id="pnlSub"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-h">
+    <div>
+      <div class="num">01 — Pulse</div>
+      <h2>Launches per cycle</h2>
+    </div>
+    <div class="right" id="pulseRight">last 60</div>
+  </div>
+  <div class="card">
+    <div class="pulse-meta">
+      <div class="label">Heartbeat</div>
+      <div class="now" id="pulseNow"></div>
+    </div>
+    <svg id="pulse" viewBox="0 0 360 86" preserveAspectRatio="none" aria-label="Launches seen per cycle"></svg>
+  </div>
+
+  <div class="section-h">
+    <div>
+      <div class="num">02 — The desk</div>
+      <h2>Five seats. One job each.</h2>
+    </div>
+    <div class="right">today</div>
+  </div>
+  <div class="plan" id="plan"></div>
+
+  <div class="section-h">
+    <div>
+      <div class="num">03 — Journal</div>
+      <h2>Activity</h2>
+    </div>
+    <div class="right">times in ET</div>
+  </div>
+  <div class="term">
+    <div class="term-bar">
+      <div class="traffic"><i></i><i></i><i></i></div>
+      <div class="term-title" id="termTitle">paper · 0 keys held</div>
+    </div>
+    <ul class="feed" id="feed"></ul>
+  </div>
+
+  <div class="section-h">
+    <div>
+      <div class="num">04 — Counts</div>
+      <h2>Today and all-time</h2>
+    </div>
+  </div>
+  <div class="card" style="padding: 6px 12px 8px;">
+    <table class="table" id="counts">
+      <thead>
+        <tr><th>Counter</th><th>Today</th><th>All</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <div class="live" id="footLive"><i></i><span>Live</span></div>
+    <div>Not financial advice · paper first</div>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+
+function fmtUSD(n) {
+  if (n == null || Number.isNaN(n)) return "—";
+  const v = Number(n);
+  const sign = v < 0 ? "-" : "";
+  return sign + "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPct(n) {
+  if (n == null || Number.isNaN(n)) return "";
+  const v = Number(n);
+  const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+  return sign + Math.abs(v).toFixed(2) + "%";
+}
+function fmtInt(n) {
+  return Number(n || 0).toLocaleString("en-US");
+}
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+function renderBadges(s) {
+  const box = $("badges");
+  box.replaceChildren();
+  const mode = el("span", "pill blue");
+  mode.append(el("span", "dot"), document.createTextNode(s.badge || "PAPER MODE · no wallet"));
+  mode.querySelector(".dot").style.background = "var(--blue)";
+  const live = el("span", s.live ? "pill mint live" : "pill stale");
+  const dot = el("span", "dot");
+  live.append(dot);
+  if (s.live) {
+    live.append(document.createTextNode("LIVE"));
+  } else {
+    const age = s.last_cycle_age_s;
+    const label = age == null ? "STALE · no cycle yet" : ("STALE · " + Math.round(age / 60) + "m ago");
+    live.append(document.createTextNode(label));
+  }
+  const clock = el("span", "pill mint");
+  clock.style.color = "var(--muted)";
+  clock.style.borderColor = "var(--line)";
+  clock.append(document.createTextNode(s.clock || ""));
+  box.append(mode, live, clock);
+}
+
+function renderHero(s) {
+  const eq = $("equity");
+  eq.textContent = fmtUSD(s.equity);
+  eq.className = "equity" + (s.day_pnl < 0 ? " down" : "");
+  const pnl = $("pnl");
+  const sign = s.day_pnl > 0 ? "+" : s.day_pnl < 0 ? "−" : "";
+  pnl.textContent = sign + fmtUSD(Math.abs(s.day_pnl)).replace("$", "$");
+  // keep the $ after sign: +$0.00
+  pnl.textContent = (s.day_pnl > 0 ? "+" : s.day_pnl < 0 ? "−" : "") + "$" + Math.abs(Number(s.day_pnl)).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+  pnl.className = "pnl" + (s.day_pnl > 0 ? " up" : s.day_pnl < 0 ? " down" : "");
+  const bits = [fmtPct(s.day_pnl_pct)];
+  if (s.starting_equity) bits.push("start " + fmtUSD(s.starting_equity));
+  $("pnlSub").textContent = bits.filter(Boolean).join("  ·  ");
+}
+
+function renderPulse(s) {
+  const svg = $("pulse");
+  const seen = (s.pulse && s.pulse.seen) || [];
+  const equity = (s.pulse && s.pulse.equity) || [];
+  $("pulseRight").textContent = seen.length ? ("last " + seen.length + " cycles") : "waiting";
+  const lastSeen = seen.length ? seen[seen.length - 1] : null;
+  const maxS0 = seen.length ? Math.max(...seen) : 0;
+  $("pulseNow").textContent = seen.length ? (lastSeen + " seen  ·  max " + maxS0) : "";
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  const W = 360, H = 86, padL = 2, padR = 2, padT = 8, padB = 14;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+
+  function add(name, attrs, text) {
+    const n = document.createElementNS("http://www.w3.org/2000/svg", name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text != null) n.textContent = text;
+    svg.appendChild(n);
+    return n;
+  }
+
+  if (seen.length < 2) {
+    add("text", { x: W/2, y: H/2, fill: "#5C6573", "font-size": "11", "text-anchor": "middle", "font-family": "Geist Mono" }, "Waiting for cycles");
+    return;
+  }
+
+  const maxS = Math.max(...seen, 1);
+  const minS = 0;
+  const n = seen.length;
+  const xAt = (i) => padL + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const yAt = (v) => padT + innerH - ((v - minS) / (maxS - minS || 1)) * innerH;
+
+  // baseline
+  add("line", { x1: padL, y1: padT + innerH, x2: padL + innerW, y2: padT + innerH, stroke: "rgba(232,240,240,0.08)", "stroke-width": "1" });
+
+  const pts = seen.map((v, i) => [xAt(i), yAt(v)]);
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const area = line + " L " + pts[pts.length-1][0].toFixed(1) + " " + (padT + innerH) + " L " + pts[0][0].toFixed(1) + " " + (padT + innerH) + " Z";
+  add("path", { d: area, fill: "rgba(46,229,157,0.14)" });
+  add("path", { d: line, fill: "none", stroke: "#2EE59D", "stroke-width": "1.8", "stroke-linejoin": "round", "stroke-linecap": "round" });
+
+  // last point
+  const last = pts[pts.length - 1];
+  add("circle", { cx: last[0].toFixed(1), cy: last[1].toFixed(1), r: "2.6", fill: "#2EE59D" });
+
+  if (equity.length === seen.length && equity.length > 1) {
+    const emin = Math.min(...equity), emax = Math.max(...equity);
+    const ey = (v) => padT + innerH - ((v - emin) / (emax - emin || 1)) * innerH * 0.85;
+    const eline = equity.map((v, i) => (i ? "L" : "M") + xAt(i).toFixed(1) + " " + ey(v).toFixed(1)).join(" ");
+    add("path", { d: eline, fill: "none", stroke: "#5AA9FF", "stroke-width": "1.3", "stroke-dasharray": "3 3", "stroke-linejoin": "round" });
+  }
+
+  add("text", { x: padL, y: H - 2, fill: "#5C6573", "font-size": "9", "font-family": "Inter Tight" }, "0");
+}
+
+function renderPlan(s) {
+  const p = s.plan || {};
+  const items = [
+    {
+      cls: "mint", idx: "01", name: "Scanner", job: "pump.fun / PumpSwap · free cuts",
+      count: p.scan, unit: "seen", chip: "free",
+      extra: p.benched ? (fmtInt(p.benched) + " benched") : ""
+    },
+    {
+      cls: "purple", idx: "02", name: "Chain", job: "mint / freeze · real top 10",
+      count: p.chain_checks, unit: "checks", chip: "free",
+      extra: p.chain_kills ? (fmtInt(p.chain_kills) + " kills") : ""
+    },
+    {
+      cls: "amber", idx: "03", name: "Analyst", job: "Claude Opus 5.5 · skip / watch / valid",
+      count: p.analyst_calls, unit: "calls", chip: "paid",
+      extra: verdictExtra(p)
+    },
+    {
+      cls: "blue", idx: "04", name: "Risk", job: "plain Python sizes every trade",
+      count: p.risk, unit: "rejects", chip: "free"
+    },
+    {
+      cls: "red", idx: "05", name: "Paper fill", job: "fees + slippage · rule-based exits",
+      count: p.entries, unit: "fills", chip: "paper",
+      extra: (p.exits || 0) ? (fmtInt(p.exits) + " exits") : "0 exits"
+    },
+  ];
+  const box = $("plan");
+  box.replaceChildren();
+  for (const it of items) {
+    const row = el("div", "step " + it.cls);
+    row.append(el("div", "idx", it.idx));
+    const mid = el("div");
+    const name = el("div", "name");
+    name.append(document.createTextNode(it.name));
+    if (it.chip) {
+      const c = el("span", "chip " + it.cls, it.chip);
+      name.append(c);
+    }
+    mid.append(name);
+    const job = el("div", "job", it.job + (it.extra ? "  ·  " + it.extra : ""));
+    mid.append(job);
+    const right = el("div");
+    right.append(el("div", "count", fmtInt(it.count)));
+    right.append(el("div", "unit", it.unit));
+    row.append(mid, right);
+    box.append(row);
+  }
+}
+
+function verdictExtra(p) {
+  const parts = [];
+  if (p.analyst_skip) parts.push(fmtInt(p.analyst_skip) + " skip");
+  if (p.analyst_watch) parts.push(fmtInt(p.analyst_watch) + " watch");
+  if (p.analyst_valid) parts.push(fmtInt(p.analyst_valid) + " valid");
+  if (!parts.length && p.analyst_kills) parts.push(fmtInt(p.analyst_kills) + " kills");
+  return parts.join(" · ");
+}
+
+function renderFeed(s) {
+  $("termTitle").textContent = "paper · " + (s.open_positions || 0) + " open · 0 keys held";
+  const ul = $("feed");
+  ul.replaceChildren();
+  const items = s.feed || [];
+  if (!items.length) {
+    ul.append(el("div", "feed-empty", "No journal events yet."));
+    return;
+  }
+  for (const it of items) {
+    const li = el("li");
+    const meta = el("div", "meta");
+    meta.append(el("span", "t", it.t || ""));
+    meta.append(el("span", "tag tone-" + (it.tone || "mint"), "[" + (it.tag || it.kind || "log") + "]"));
+    li.append(meta, el("div", "txt", it.text || ""));
+    ul.append(li);
+  }
+}
+
+function renderCounts(s) {
+  const tbody = $("counts").querySelector("tbody");
+  tbody.replaceChildren();
+  const today = (s.counters && s.counters.today) || {};
+  const all = (s.counters && s.counters.all) || {};
+  const rows = [
+    ["Cycles", "cycles"],
+    ["Launches seen", "seen"],
+    ["Free kills", "free"],
+    ["Benched", "benched"],
+    ["Chain checks", "chain_checks"],
+    ["Analyst calls", "analyst_calls"],
+    ["Paper entries", "entries"],
+    ["Exits", "exits"],
+    ["Errors", "errors"],
+    ["Open positions", "open_positions"],
+  ];
+  for (const [label, key] of rows) {
+    const tr = el("tr");
+    tr.append(el("td", "", label), el("td", "", fmtInt(today[key])), el("td", "", fmtInt(all[key])));
+    tbody.append(tr);
+  }
+}
+
+function renderFoot(s) {
+  const n = $("footLive");
+  n.className = "live" + (s.live ? "" : " stale");
+  n.querySelector("span").textContent = s.live ? "Live" : "Stale";
+}
+
+function render(s) {
+  renderBadges(s);
+  renderHero(s);
+  renderPulse(s);
+  renderPlan(s);
+  renderFeed(s);
+  renderCounts(s);
+  renderFoot(s);
+}
+
+async function tick() {
+  try {
+    const r = await fetch("https://api.github.com/repos/darondicker729-oss/spike-desk-screen/contents/state.json?t="+Date.now(), { cache: "no-store", headers: { Accept: "application/vnd.github.raw+json" } });
+    if (!r.ok) return;
+    const s = await r.json();
+    render(s);
+  } catch (e) {
+    /* stay on last snapshot; this is a local preview */
+  }
+}
+
+tick();
+setInterval(tick, 60000);
+</script>
+</body>
+</html>
